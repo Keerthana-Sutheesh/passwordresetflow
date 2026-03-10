@@ -15,6 +15,11 @@ app.get('/api/health', (_, res) => {
   res.status(200).json({ ok: true, message: 'Server is running' });
 });
 
+app.get("/test", (req, res) => {
+  console.log("Test route hit");
+  res.send("Backend working");
+});
+
 app.use('/api/auth', authRoutes);
 
 export default app;
