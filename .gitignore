@@ -7,3 +7,4 @@ server/.env
 dist/
 client/dist/
 server/data/
+client/.env
