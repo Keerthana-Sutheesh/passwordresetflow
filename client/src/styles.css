@@ -1,0 +1,13 @@
+body {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+.app-container {
+  min-height: 100vh;
+}
+
+.card-width {
+  width: 100%;
+  max-width: 520px;
+}
