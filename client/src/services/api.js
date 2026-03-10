@@ -1,5 +1,5 @@
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL?.trim() || 'http://localhost:3001/api/auth';
+  import.meta.env.VITE_API_BASE_URL?.trim();
 
 async function handleResponse(response) {
   const payload = await response.json();

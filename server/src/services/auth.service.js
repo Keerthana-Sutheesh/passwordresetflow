@@ -60,7 +60,7 @@ export async function createPasswordResetToken(email) {
     resetTokenExpiresAt: expiresAt,
   });
 
-  const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+  const clientUrl = process.env.CLIENT_URL;
   const resetUrl = `${clientUrl}/reset-password?token=${token}`;
 
   await sendResetEmail({
