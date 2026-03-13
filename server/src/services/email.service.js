@@ -8,12 +8,19 @@ function getMailerConfig() {
   const smtpPort = Number.parseInt(process.env.SMTP_PORT || '587', 10);
   const smtpUser = process.env.SMTP_USER?.trim();
   const smtpPass = process.env.SMTP_PASS?.trim();
-  const mailFrom = process.env.MAIL_FROM?.trim();
-  const smtpSecure = process.env.SMTP_SECURE === 'true';
+  const mailFrom = process.env.MAIL_FROM?.trim() || process.env.SMTP_FROM?.trim() || smtpUser;
+  const smtpSecureEnv = process.env.SMTP_SECURE?.trim().toLowerCase();
+  const smtpSecure = smtpSecureEnv ? smtpSecureEnv === 'true' : smtpPort === 465;
 
-  if (!smtpHost || !smtpUser || !smtpPass || !mailFrom || Number.isNaN(smtpPort)) {
+  const missing = [];
+  if (!smtpHost) missing.push('SMTP_HOST');
+  if (!smtpUser) missing.push('SMTP_USER');
+  if (!smtpPass) missing.push('SMTP_PASS');
+  if (Number.isNaN(smtpPort)) missing.push('SMTP_PORT');
+
+  if (missing.length > 0) {
     throw new Error(
-      'SMTP configuration is missing. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, and MAIL_FROM in server/.env',
+      `SMTP configuration is missing: ${missing.join(', ')}. Set them in Netlify Environment Variables.`,
     );
   }
 
