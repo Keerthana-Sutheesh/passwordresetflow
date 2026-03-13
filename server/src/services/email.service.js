@@ -4,18 +4,26 @@ import { EmailDeliveryError } from '../utils/errors.js';
 let transporterInstance;
 
 function getMailerConfig() {
+  const smtpHost = process.env.SMTP_HOST?.trim();
+  const smtpPort = Number.parseInt(process.env.SMTP_PORT || '587', 10);
   const smtpUser = process.env.SMTP_USER?.trim();
-  const smtpPass = process.env.SMTP_PASS?.replace(/\s+/g, '').trim();
-  const smtpFrom = process.env.SMTP_FROM?.trim() || smtpUser;
+  const smtpPass = process.env.SMTP_PASS?.trim();
+  const mailFrom = process.env.MAIL_FROM?.trim();
+  const smtpSecure = process.env.SMTP_SECURE === 'true';
 
-  if (!smtpUser || !smtpPass || !smtpFrom) {
-    throw new Error('SMTP configuration is missing. Set SMTP_USER, SMTP_PASS and SMTP_FROM in server/.env');
+  if (!smtpHost || !smtpUser || !smtpPass || !mailFrom || Number.isNaN(smtpPort)) {
+    throw new Error(
+      'SMTP configuration is missing. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, and MAIL_FROM in server/.env',
+    );
   }
 
   return {
+    smtpHost,
+    smtpPort,
     smtpUser,
     smtpPass,
-    smtpFrom,
+    smtpSecure,
+    mailFrom,
   };
 }
 
@@ -25,19 +33,15 @@ function getTransporter() {
   }
 
   const config = getMailerConfig();
-
-transporterInstance = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: config.smtpUser,
-    pass: config.smtpPass,
-  },
-  connectionTimeout: 10000,
-  logger: true,
-  debug: true,
-});
+  transporterInstance = nodemailer.createTransport({
+    host: config.smtpHost,
+    port: config.smtpPort,
+    secure: config.smtpSecure,
+    auth: {
+      user: config.smtpUser,
+      pass: config.smtpPass,
+    },
+  });
 
   return transporterInstance;
 }
@@ -46,29 +50,18 @@ export async function sendResetEmail({ to, resetUrl }) {
   try {
     const config = getMailerConfig();
     const transporter = getTransporter();
-    const mailOptions = {
-      from: config.smtpFrom,
+
+    const info = await transporter.sendMail({
+      from: config.mailFrom,
       to,
       subject: 'Password Reset Link',
       html: `<p>Use this link to reset your password:</p><p><a href="${resetUrl}">${resetUrl}</a></p>`,
-    };
-
-    await new Promise((resolve, reject) => {
-      transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-          reject(error);
-          return;
-        }
-
-        if (process.env.EMAIL_LOG_ENABLED === 'true') {
-          console.log(`Message sent successfully: ${info.messageId}`);
-        }
-
-        resolve(info);
-      });
     });
 
     if (process.env.EMAIL_LOG_ENABLED === 'true') {
+      if (info?.messageId) {
+        console.log(`Message sent successfully: ${info.messageId}`);
+      }
       console.log(`Reset email sent to ${to}`);
     }
   } catch (error) {
